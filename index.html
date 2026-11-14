@@ -29,7 +29,7 @@
     box-shadow: 0 4px 20px rgba(0,0,0,0.5);
   }
   .logo { font-size: 20px; font-weight: 800; color: #0088FF; display: flex; align-items: center; gap: 8px; }
-  .nav-links { display: flex; gap: 10px; }
+  .nav-links { display: flex; gap: 10px; overflow-x: auto; white-space: nowrap; }
   .nav-btn {
     background: transparent; border: none; color: #94a3b8; font-size: 14px; font-weight: 600;
     cursor: pointer; padding: 8px 16px; border-radius: 8px; transition: 0.3s;
@@ -95,6 +95,12 @@
   .btn-delete { background: #ef4444; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; }
 
   iframe { width: 100%; aspect-ratio: 16/9; border-radius: 12px; border: none; }
+  
+  .video-error {
+    width: 100%; aspect-ratio: 16/9; background: #1e293b; border-radius: 12px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    color: #ef4444; font-size: 14px; font-weight: bold;
+  }
 </style>
 </head>
 <body>
@@ -116,27 +122,21 @@
   <div id="tab-scripts" class="tab-content active">
     <h1 class="page-title">Scripts Premium</h1>
     <p class="page-sub">Baixe os melhores scripts atualizados para o seu executor</p>
-    <div class="grid" id="scripts-grid">
-      <!-- Os scripts vão aparecer aqui via JavaScript -->
-    </div>
+    <div class="grid" id="scripts-grid"></div>
   </div>
 
   <!-- ABA VÍDEOS -->
   <div id="tab-videos" class="tab-content">
     <h1 class="page-title">Tutoriais e Gameplays</h1>
     <p class="page-sub">Aprenda a usar os scripts e veja os melhores momentos</p>
-    <div class="grid" id="videos-grid">
-      <!-- Os vídeos vão aparecer aqui via JavaScript -->
-    </div>
+    <div class="grid" id="videos-grid"></div>
   </div>
 
   <!-- ABA EXECUTORES -->
   <div id="tab-executores" class="tab-content">
     <h1 class="page-title">Melhores Executores</h1>
     <p class="page-sub">Programas para rodar os scripts no celular ou PC</p>
-    <div class="grid" id="executores-grid">
-      <!-- Os executores vão aparecer aqui via JavaScript -->
-    </div>
+    <div class="grid" id="executores-grid"></div>
   </div>
 
   <!-- ABA ADM -->
@@ -185,13 +185,11 @@
   const ADMIN_PASSWORD = "davi102030"; 
   const STORAGE_PREFIX = "hollowhub_";
 
-  // ✅ COLOQUE O SEU LINK DO YOUTUBE AQUI
   const defaultScripts = [
     { id: 1, title: "GG MODS v69 (Premium)", desc: "Script completo com Aimbot, ESP, Hitbox e Auto Farm", link: "#" }
   ];
   
   const defaultVideos = [
-    // Link de exemplo. Pode colocar o link completo do YouTube ou apenas o ID.
     { id: 1, title: "Como usar o GG MODS", desc: "Tutorial ensinando a colocar a key e executar", link: "https://youtu.be/5LWdIwY2SLI" } 
   ];
   
@@ -199,23 +197,24 @@
     { id: 1, title: "Delta Executor", desc: "Melhor executor para celular Android", link: "https://delta-executor.com" }
   ];
 
-  // Variáveis globais
   let scripts = JSON.parse(localStorage.getItem(STORAGE_PREFIX + 'scripts')) || defaultScripts;
   let videos = JSON.parse(localStorage.getItem(STORAGE_PREFIX + 'videos')) || defaultVideos;
   let executores = JSON.parse(localStorage.getItem(STORAGE_PREFIX + 'executores')) || defaultExecutors;
 
   // ==========================================
-  // FUNÇÃO PARA EXTRAIR O ID DO YOUTUBE
+  // FUNÇÃO MELHORADA PARA PEGAR O ID DO YOUTUBE
   // ==========================================
   function getYouTubeID(url) {
-    if (!url) return '';
-    // Se já for só o ID de 11 caracteres (sem barras e sem pontos)
+    if (!url) return null;
+    // Se o cara colocar apenas o ID de 11 caracteres
     if (url.length === 11 && !url.includes('/') && !url.includes('.')) return url;
     
-    // Regex para pegar o ID de links como youtu.be/ID ou youtube.com/watch?v=ID
-    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+    // Regex que aceita youtu.be, youtube.com, shorts, embed, etc.
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=|shorts\/)([^#\&\?]*).*/;
     const match = url.match(regExp);
-    return (match && match[2].length === 11) ? match[2] : url;
+    
+    // Retorna o ID se ele tiver 11 caracteres
+    return (match && match[2].length === 11) ? match[2] : null;
   }
 
   // ==========================================
@@ -250,20 +249,38 @@
       `;
     });
 
-    // Vídeos (Aqui usamos a função getYouTubeID para converter o link)
+    // Vídeos (Agora verifica se o link é válido antes de mostrar)
     const videosGrid = document.getElementById('videos-grid');
     videosGrid.innerHTML = videos.length ? '' : '<p style="color:#94a3b8">Nenhum vídeo disponível</p>';
     videos.forEach(v => {
       const videoID = getYouTubeID(v.link);
-      videosGrid.innerHTML += `
-        <div class="card" style="padding: 0; overflow: hidden; border: none;">
-          <iframe src="https://www.youtube.com/embed/${videoID}" allowfullscreen></iframe>
-          <div style="padding: 15px;">
-            <div class="card-title">${v.title}</div>
-            <div class="card-desc" style="margin-bottom: 0;">${v.desc}</div>
+      
+      if (videoID) {
+        // Se o ID for válido, mostra o player
+        videosGrid.innerHTML += `
+          <div class="card" style="padding: 0; overflow: hidden; border: none;">
+            <iframe src="https://www.youtube.com/embed/${videoID}" allowfullscreen></iframe>
+            <div style="padding: 15px;">
+              <div class="card-title">${v.title}</div>
+              <div class="card-desc" style="margin-bottom: 0;">${v.desc}</div>
+            </div>
           </div>
-        </div>
-      `;
+        `;
+      } else {
+        // Se for inválido, mostra uma tela de erro elegante em vez de tela preta
+        videosGrid.innerHTML += `
+          <div class="card" style="padding: 0; overflow: hidden; border: none; border: 1px solid #ef4444;">
+            <div class="video-error">
+              <span>⚠️ Link Inválido</span>
+              <span style="font-size: 11px; margin-top: 5px; color: #94a3b8; font-weight: normal;">${v.link}</span>
+            </div>
+            <div style="padding: 15px;">
+              <div class="card-title">${v.title}</div>
+              <div class="card-desc" style="margin-bottom: 0;">${v.desc}</div>
+            </div>
+          </div>
+        `;
+      }
     });
 
     // Executores
@@ -311,7 +328,7 @@
     const type = document.getElementById('adm-type').value;
     const linkInput = document.getElementById('adm-link');
     if (type === 'video') {
-      linkInput.placeholder = "Cole o link inteiro do YouTube (ex: https://youtu.be/5LWdIwY2SLI)";
+      linkInput.placeholder = "Cole o link do YouTube (ex: https://youtu.be/5LWdIwY2SLI)";
     } else if (type === 'script') {
       linkInput.placeholder = "Link do Pastebin, Raw ou Mediafire";
     } else {
@@ -328,6 +345,15 @@
     if (!title || !desc || !link) {
       alert("Preencha todos os campos!");
       return;
+    }
+
+    // ✅ VALIDAÇÃO EXTRA: Se for vídeo, tem que ser um link válido do YouTube
+    if (type === 'video') {
+      const videoID = getYouTubeID(link);
+      if (!videoID) {
+        alert("ERRO: O link do YouTube é inválido! Certifique-se de copiar o link correto.");
+        return;
+      }
     }
 
     const newItem = { id: Date.now(), title, desc, link };
@@ -385,7 +411,6 @@
     renderAll();
     updateFormFields();
   });
-
 </script>
 </body>
 </html>
