@@ -84,7 +84,6 @@
     border: 1px solid rgba(0, 136, 255, 0.3);
   }
   .add-form h3 { margin-bottom: 15px; color: #0088FF; }
-  .form-row { display: flex; gap: 10px; margin-bottom: 10px; }
   
   .item-list { margin-top: 20px; }
   .list-item {
@@ -94,8 +93,44 @@
   }
   .btn-delete { background: #ef4444; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; }
 
-  iframe { width: 100%; aspect-ratio: 16/9; border-radius: 12px; border: none; }
-  
+  /* ✅ NOVO VISUAL DO VÍDEO (Sem iframe que buga no celular) */
+  .video-container {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16/9;
+    border-radius: 12px;
+    overflow: hidden;
+    cursor: pointer;
+    background: #000;
+  }
+  .video-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0.8;
+    transition: 0.3s;
+  }
+  .video-container:hover img {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+  .play-btn {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 50px;
+    height: 50px;
+    background: rgba(255, 0, 0, 0.9);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 20px;
+    padding-left: 4px;
+    pointer-events: none;
+  }
   .video-error {
     width: 100%; aspect-ratio: 16/9; background: #1e293b; border-radius: 12px;
     display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -128,7 +163,7 @@
   <!-- ABA VÍDEOS -->
   <div id="tab-videos" class="tab-content">
     <h1 class="page-title">Tutoriais e Gameplays</h1>
-    <p class="page-sub">Aprenda a usar os scripts e veja os melhores momentos</p>
+    <p class="page-sub">Clique na capa do vídeo para assistir no YouTube</p>
     <div class="grid" id="videos-grid"></div>
   </div>
 
@@ -142,19 +177,16 @@
   <!-- ABA ADM -->
   <div id="tab-admin" class="tab-content">
     
-    <!-- Tela de Login -->
     <div id="admin-login" class="admin-login">
       <h2 style="margin-bottom: 20px;">Acesso Restrito</h2>
       <input type="password" id="admin-pass" class="input-box" placeholder="Digite a senha de ADM">
       <button class="btn" onclick="loginAdmin()">Entrar no Painel</button>
     </div>
 
-    <!-- Painel Aberto -->
     <div id="admin-panel" class="admin-panel">
       <h1 class="page-title" style="color: #f59e0b;">Painel Administrativo</h1>
       <p class="page-sub">Adicione novos Scripts, Vídeos e Executores aqui</p>
       
-      <!-- Formulário de Adição -->
       <div class="add-form">
         <h3>Adicionar Novo Item</h3>
         <select id="adm-type" class="input-box" onchange="updateFormFields()">
@@ -162,13 +194,12 @@
           <option value="video">Vídeo (YouTube)</option>
           <option value="executor">Executor</option>
         </select>
-        <input type="text" id="adm-title" class="input-box" placeholder="Nome do Item (Ex: Script MM2, Delta Executor)">
+        <input type="text" id="adm-title" class="input-box" placeholder="Nome do Item">
         <input type="text" id="adm-desc" class="input-box" placeholder="Descrição curta">
-        <input type="text" id="adm-link" class="input-box" placeholder="Link (Link do script, Link do YouTube ou Link do Executor)">
+        <input type="text" id="adm-link" class="input-box" placeholder="Link">
         <button class="btn" style="background: #10b981;" onclick="addItem()">Salvar Item</button>
       </div>
 
-      <!-- Lista de Itens para Deletar -->
       <div class="item-list">
         <h3>Itens Adicionados (Clique para Deletar)</h3>
         <div id="admin-list"></div>
@@ -179,11 +210,8 @@
 </div>
 
 <script>
-  // ==========================================
-  // CONFIGURAÇÃO DO SITE
-  // ==========================================
   const ADMIN_PASSWORD = "davi102030"; 
-  const STORAGE_PREFIX = "hollowhub_";
+  const STORAGE_PREFIX = "hollowhub_v2_";
 
   const defaultScripts = [
     { id: 1, title: "GG MODS v69 (Premium)", desc: "Script completo com Aimbot, ESP, Hitbox e Auto Farm", link: "#" }
@@ -201,40 +229,30 @@
   let videos = JSON.parse(localStorage.getItem(STORAGE_PREFIX + 'videos')) || defaultVideos;
   let executores = JSON.parse(localStorage.getItem(STORAGE_PREFIX + 'executores')) || defaultExecutors;
 
-  // ==========================================
-  // FUNÇÃO MELHORADA PARA PEGAR O ID DO YOUTUBE
-  // ==========================================
+  // ✅ FUNÇÃO CORRIGIDA PARA PEGAR O ID DO YOUTUBE
   function getYouTubeID(url) {
     if (!url) return null;
-    // Se o cara colocar apenas o ID de 11 caracteres
+    // Se já for o ID puro (11 caracteres)
     if (url.length === 11 && !url.includes('/') && !url.includes('.')) return url;
     
-    // Regex que aceita youtu.be, youtube.com, shorts, embed, etc.
+    // Pega ID de links: youtu.be, youtube.com/watch?v=, shorts, etc.
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=|shorts\/)([^#\&\?]*).*/;
     const match = url.match(regExp);
     
-    // Retorna o ID se ele tiver 11 caracteres
-    return (match && match[2].length === 11) ? match[2] : null;
+    if (match && match[2].length === 11) return match[2];
+    return null; // Se não achar, é inválido
   }
 
-  // ==========================================
-  // SISTEMA DE NAVEGAÇÃO
-  // ==========================================
   function switchTab(tabId, btn) {
     document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
     document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-    
     document.getElementById('tab-' + tabId).classList.add('active');
     btn.classList.add('active');
-    
     if (tabId === 'admin') checkAdminLogin();
   }
 
-  // ==========================================
-  // RENDERIZAÇÃO DOS CARDS
-  // ==========================================
   function renderAll() {
-    // Scripts
+    // SCRIPTS
     const scriptsGrid = document.getElementById('scripts-grid');
     scriptsGrid.innerHTML = scripts.length ? '' : '<p style="color:#94a3b8">Nenhum script disponível</p>';
     scripts.forEach(s => {
@@ -249,17 +267,20 @@
       `;
     });
 
-    // Vídeos (Agora verifica se o link é válido antes de mostrar)
+    // VÍDEOS
     const videosGrid = document.getElementById('videos-grid');
     videosGrid.innerHTML = videos.length ? '' : '<p style="color:#94a3b8">Nenhum vídeo disponível</p>';
     videos.forEach(v => {
       const videoID = getYouTubeID(v.link);
       
       if (videoID) {
-        // Se o ID for válido, mostra o player
+        // Puxa a capa do vídeo (Thumbnail). Se clicar, abre no YouTube App.
         videosGrid.innerHTML += `
-          <div class="card" style="padding: 0; overflow: hidden; border: none;">
-            <iframe src="https://www.youtube.com/embed/${videoID}" allowfullscreen></iframe>
+          <div class="card" style="padding: 0; overflow: hidden;">
+            <a href="https://www.youtube.com/watch?v=${videoID}" target="_blank" class="video-container">
+              <img src="https://img.youtube.com/vi/${videoID}/hqdefault.jpg" alt="Capa do Vídeo">
+              <div class="play-btn">▶</div>
+            </a>
             <div style="padding: 15px;">
               <div class="card-title">${v.title}</div>
               <div class="card-desc" style="margin-bottom: 0;">${v.desc}</div>
@@ -267,12 +288,11 @@
           </div>
         `;
       } else {
-        // Se for inválido, mostra uma tela de erro elegante em vez de tela preta
+        // Tela de erro se o link for inválido
         videosGrid.innerHTML += `
-          <div class="card" style="padding: 0; overflow: hidden; border: none; border: 1px solid #ef4444;">
+          <div class="card" style="padding: 0; overflow: hidden; border: 1px solid #ef4444;">
             <div class="video-error">
               <span>⚠️ Link Inválido</span>
-              <span style="font-size: 11px; margin-top: 5px; color: #94a3b8; font-weight: normal;">${v.link}</span>
             </div>
             <div style="padding: 15px;">
               <div class="card-title">${v.title}</div>
@@ -283,7 +303,7 @@
       }
     });
 
-    // Executores
+    // EXECUTORES
     const execGrid = document.getElementById('executores-grid');
     execGrid.innerHTML = executores.length ? '' : '<p style="color:#94a3b8">Nenhum executor disponível</p>';
     executores.forEach(e => {
@@ -299,9 +319,6 @@
     });
   }
 
-  // ==========================================
-  // SISTEMA DO PAINEL ADM
-  // ==========================================
   function checkAdminLogin() {
     const isLogged = sessionStorage.getItem(STORAGE_PREFIX + 'admin_logged') === 'true';
     if (isLogged) {
@@ -328,11 +345,11 @@
     const type = document.getElementById('adm-type').value;
     const linkInput = document.getElementById('adm-link');
     if (type === 'video') {
-      linkInput.placeholder = "Cole o link do YouTube (ex: https://youtu.be/5LWdIwY2SLI)";
+      linkInput.placeholder = "Cole o link do YouTube inteiro";
     } else if (type === 'script') {
-      linkInput.placeholder = "Link do Pastebin, Raw ou Mediafire";
+      linkInput.placeholder = "Link do Script";
     } else {
-      linkInput.placeholder = "Link do site do Executor";
+      linkInput.placeholder = "Link do Executor";
     }
   }
 
@@ -347,13 +364,10 @@
       return;
     }
 
-    // ✅ VALIDAÇÃO EXTRA: Se for vídeo, tem que ser um link válido do YouTube
-    if (type === 'video') {
-      const videoID = getYouTubeID(link);
-      if (!videoID) {
-        alert("ERRO: O link do YouTube é inválido! Certifique-se de copiar o link correto.");
-        return;
-      }
+    // Validação para vídeo (se não for link do youtube, bloqueia)
+    if (type === 'video' && !getYouTubeID(link)) {
+      alert("ERRO: Link do YouTube inválido! Copie o link inteiro do vídeo.");
+      return;
     }
 
     const newItem = { id: Date.now(), title, desc, link };
@@ -406,11 +420,10 @@
     if(list.innerHTML === '') list.innerHTML = '<p style="color:#94a3b8;">Nenhum item salvo</p>';
   }
 
-  // Inicialização
   document.addEventListener('DOMContentLoaded', () => {
     renderAll();
     updateFormFields();
   });
 </script>
 </body>
-</html>
+  </html>
