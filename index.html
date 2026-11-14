@@ -164,7 +164,7 @@
         </select>
         <input type="text" id="adm-title" class="input-box" placeholder="Nome do Item (Ex: Script MM2, Delta Executor)">
         <input type="text" id="adm-desc" class="input-box" placeholder="Descrição curta">
-        <input type="text" id="adm-link" class="input-box" placeholder="Link (Link do script, ID do YouTube ou Link do Executor)">
+        <input type="text" id="adm-link" class="input-box" placeholder="Link (Link do script, Link do YouTube ou Link do Executor)">
         <button class="btn" style="background: #10b981;" onclick="addItem()">Salvar Item</button>
       </div>
 
@@ -182,16 +182,19 @@
   // ==========================================
   // CONFIGURAÇÃO DO SITE
   // ==========================================
-  const ADMIN_PASSWORD = "davi102030"; // 🔑 SENHA CORRIGIDA (SEM O PONTO)
+  const ADMIN_PASSWORD = "davi102030"; 
   const STORAGE_PREFIX = "hollowhub_";
 
-  // Dados Padrão (Caso o navegador esteja limpo)
+  // ✅ COLOQUE O SEU LINK DO YOUTUBE AQUI
   const defaultScripts = [
     { id: 1, title: "GG MODS v69 (Premium)", desc: "Script completo com Aimbot, ESP, Hitbox e Auto Farm", link: "#" }
   ];
+  
   const defaultVideos = [
-    { id: 1, title: "Como usar o GG MODS", desc: "Tutorial ensinando a colocar a key e executar", link: "dQw4w9WgXcQ" }
+    // Link de exemplo. Pode colocar o link completo do YouTube ou apenas o ID.
+    { id: 1, title: "Como usar o GG MODS", desc: "Tutorial ensinando a colocar a key e executar", link: "https://youtu.be/5LWdIwY2SLI" } 
   ];
+  
   const defaultExecutors = [
     { id: 1, title: "Delta Executor", desc: "Melhor executor para celular Android", link: "https://delta-executor.com" }
   ];
@@ -200,6 +203,20 @@
   let scripts = JSON.parse(localStorage.getItem(STORAGE_PREFIX + 'scripts')) || defaultScripts;
   let videos = JSON.parse(localStorage.getItem(STORAGE_PREFIX + 'videos')) || defaultVideos;
   let executores = JSON.parse(localStorage.getItem(STORAGE_PREFIX + 'executores')) || defaultExecutors;
+
+  // ==========================================
+  // FUNÇÃO PARA EXTRAIR O ID DO YOUTUBE
+  // ==========================================
+  function getYouTubeID(url) {
+    if (!url) return '';
+    // Se já for só o ID de 11 caracteres (sem barras e sem pontos)
+    if (url.length === 11 && !url.includes('/') && !url.includes('.')) return url;
+    
+    // Regex para pegar o ID de links como youtu.be/ID ou youtube.com/watch?v=ID
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : url;
+  }
 
   // ==========================================
   // SISTEMA DE NAVEGAÇÃO
@@ -233,13 +250,14 @@
       `;
     });
 
-    // Vídeos
+    // Vídeos (Aqui usamos a função getYouTubeID para converter o link)
     const videosGrid = document.getElementById('videos-grid');
     videosGrid.innerHTML = videos.length ? '' : '<p style="color:#94a3b8">Nenhum vídeo disponível</p>';
     videos.forEach(v => {
+      const videoID = getYouTubeID(v.link);
       videosGrid.innerHTML += `
         <div class="card" style="padding: 0; overflow: hidden; border: none;">
-          <iframe src="https://www.youtube.com/embed/${v.link}" allowfullscreen></iframe>
+          <iframe src="https://www.youtube.com/embed/${videoID}" allowfullscreen></iframe>
           <div style="padding: 15px;">
             <div class="card-title">${v.title}</div>
             <div class="card-desc" style="margin-bottom: 0;">${v.desc}</div>
@@ -293,7 +311,7 @@
     const type = document.getElementById('adm-type').value;
     const linkInput = document.getElementById('adm-link');
     if (type === 'video') {
-      linkInput.placeholder = "Apenas o ID do YouTube (ex: dQw4w9WgXcQ)";
+      linkInput.placeholder = "Cole o link inteiro do YouTube (ex: https://youtu.be/5LWdIwY2SLI)";
     } else if (type === 'script') {
       linkInput.placeholder = "Link do Pastebin, Raw ou Mediafire";
     } else {
@@ -370,4 +388,4 @@
 
 </script>
 </body>
-  </html>
+</html>
